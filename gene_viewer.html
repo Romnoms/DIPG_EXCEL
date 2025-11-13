@@ -81,16 +81,26 @@
         .suggestion-item {
             padding: 12px 20px;
             cursor: pointer;
-            transition: background-color 0.2s;
+            transition: all 0.2s;
             border-bottom: 1px solid #f7fafc;
         }
 
         .suggestion-item:hover {
-            background-color: #f7fafc;
+            background: #667eea;
+            color: white;
         }
 
         .suggestion-item:last-child {
             border-bottom: none;
+        }
+
+        .suggestion-highlight {
+            font-weight: bold;
+            color: #764ba2;
+        }
+
+        .suggestion-item:hover .suggestion-highlight {
+            color: #ffffff;
         }
 
         .chart-container {
@@ -242,24 +252,44 @@
                 return;
             }
 
-            const matches = allGenes.filter(gene =>
-                gene.toUpperCase().includes(query)
-            ).slice(0, 50);
+            const matches = allGenes
+                .filter(gene => gene.toUpperCase().includes(query))
+                .slice(0, 20);
 
             if (matches.length > 0) {
-                suggestionsDiv.innerHTML = matches.map(gene =>
-                    `<div class="suggestion-item" onclick="selectGene('${gene}')">${gene}</div>`
-                ).join('');
+                suggestionsDiv.innerHTML = matches.map(gene => {
+                    const idx = gene.toUpperCase().indexOf(query);
+                    const before = gene.substring(0, idx);
+                    const match = gene.substring(idx, idx + query.length);
+                    const after = gene.substring(idx + query.length);
+
+                    return `<div class="suggestion-item" data-gene="${gene}">
+                        ${before}<span class="suggestion-highlight">${match}</span>${after}
+                    </div>`;
+                }).join('');
                 suggestionsDiv.style.display = 'block';
             } else {
                 suggestionsDiv.style.display = 'none';
             }
         });
 
+        suggestionsDiv.addEventListener('click', function(e) {
+            if (e.target.classList.contains('suggestion-item') || e.target.parentElement.classList.contains('suggestion-item')) {
+                const item = e.target.classList.contains('suggestion-item') ? e.target : e.target.parentElement;
+                const gene = item.dataset.gene;
+                searchInput.value = gene;
+                suggestionsDiv.style.display = 'none';
+                displayGeneData(gene);
+            }
+        });
+
         searchInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
-                const gene = this.value.trim().toUpperCase();
-                selectGene(gene);
+                const gene = this.value.trim();
+                if (gene) {
+                    suggestionsDiv.style.display = 'none';
+                    displayGeneData(gene);
+                }
             }
         });
 
@@ -269,12 +299,6 @@
                 suggestionsDiv.style.display = 'none';
             }
         });
-
-        function selectGene(geneName) {
-            suggestionsDiv.style.display = 'none';
-            searchInput.value = geneName;
-            displayGeneData(geneName);
-        }
 
         let currentChart = null;
 
