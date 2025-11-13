@@ -226,14 +226,11 @@
             .then(data => {
                 geneData = data;
 
-                // Extract all unique genes
-                const geneSet = new Set();
-                Object.values(data).forEach(patientData => {
-                    patientData.forEach(gene => geneSet.add(gene.gene));
-                });
-                allGenes = Array.from(geneSet).sort();
+                // Extract all gene names from keys
+                allGenes = Object.keys(data).sort();
 
-                document.getElementById('content').innerHTML = '<div class="info-box"><strong>Ready!</strong> Search for a gene above to view expression data across DIPG patient samples.</div>';
+                document.getElementById('content').innerHTML = '<div class="info-box"><strong>Ready!</strong> Search for a gene above to view expression data across DIPG patient samples. <br><br>Dataset: ' + allGenes.length + ' genes loaded.</div>';
+                console.log('✅ Loaded ' + allGenes.length + ' genes');
             })
             .catch(error => {
                 document.getElementById('content').innerHTML = '<div class="loading">Error loading data. Please try again.</div>';
@@ -305,18 +302,8 @@
         function displayGeneData(geneName) {
             geneName = geneName.toUpperCase();
 
-            // Find gene data across all patients
-            const patients = ['DIPG4', 'DIPG25', 'SF7761', 'DIPG13', 'DIPG17', 'JHHDIPG1'];
-            const patientData = {};
-
-            patients.forEach(patient => {
-                const geneEntry = geneData[patient].find(g => g.gene.toUpperCase() === geneName);
-                if (geneEntry) {
-                    patientData[patient] = geneEntry;
-                }
-            });
-
-            if (Object.keys(patientData).length === 0) {
+            // Check if gene exists
+            if (!geneData[geneName]) {
                 document.getElementById('content').innerHTML = `
                     <div class="info-box">
                         <strong>Gene not found:</strong> "${geneName}" was not found in the dataset or did not pass filtering criteria.
@@ -325,15 +312,13 @@
                 return;
             }
 
-            // Get NPC (control) value from first available patient data
-            const firstPatient = Object.values(patientData)[0];
-            const npcMean = firstPatient.npc_mean;
-            const npcSem = firstPatient.npc_sem;
+            const gene = geneData[geneName];
+            const patients = ['DIPG4', 'DIPG25', 'SF7761', 'DIPG13', 'DIPG17', 'JHHDIPG1'];
 
             // Prepare chart data
-            const labels = ['NPC (Normal)', ...patients.filter(p => patientData[p])];
-            const means = [npcMean, ...patients.filter(p => patientData[p]).map(p => patientData[p].patient_mean)];
-            const sems = [npcSem, ...patients.filter(p => patientData[p]).map(p => patientData[p].patient_sem)];
+            const labels = ['NPC (Normal)', ...patients];
+            const means = [gene.NPC.mean, ...patients.map(p => gene[p].mean)];
+            const sems = [gene.NPC.sem, ...patients.map(p => gene[p].sem)];
             const colors = [
                 'rgba(99, 179, 237, 0.8)',  // NPC - blue
                 'rgba(255, 99, 132, 0.8)',  // DIPG4 - red
@@ -351,17 +336,19 @@
                 </div>
 
                 <div class="stats-grid">
-                    ${patients.filter(p => patientData[p]).map(patient => {
-                        const data = patientData[patient];
-                        const fc = data.fold_change;
-                        const pVal = parseFloat(data.p_value);
+                    ${patients.map(patient => {
+                        const data = gene[patient];
+                        const fc = data.fc;
+                        const pVal = data.pvalue;
+                        const status = fc > 2 ? '↑ Upregulated' : fc < 0.5 ? '↓ Downregulated' : '→ Similar';
+                        const sigColor = pVal < 0.05 ? '#e53e3e' : '#718096';
                         return `
                             <div class="stat-card">
                                 <div class="stat-label">${patient}</div>
                                 <div class="stat-value">${fc.toFixed(2)}x</div>
                                 <div class="stat-label">Fold Change</div>
-                                <div class="stat-label" style="margin-top: 10px;">p-value: ${pVal.toExponential(2)}</div>
-                                <div class="stat-label">${fc > 2 ? '↑ Upregulated' : fc < 0.5 ? '↓ Downregulated' : '→ Similar'}</div>
+                                <div class="stat-label" style="margin-top: 10px; color: ${sigColor};">p = ${pVal.toExponential(2)}</div>
+                                <div class="stat-label" style="font-weight: bold;">${status}</div>
                             </div>
                         `;
                     }).join('')}
@@ -372,7 +359,7 @@
                     • Expression values are shown as mean ± SEM<br>
                     • Fold change represents patient expression / NPC expression<br>
                     • P-values from Welch's t-test comparing patient to NPC replicates<br>
-                    • ${Object.keys(patientData).length} of 6 patients analyzed for ${geneName}
+                    • All 6 DIPG patients analyzed for ${geneName}
                 </div>
             `;
 
