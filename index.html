@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DIPG RNA-seq Analysis Portal</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 60px 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            color: #2d3748;
+            margin-bottom: 20px;
+            font-size: 3em;
+            text-align: center;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #718096;
+            margin-bottom: 50px;
+            font-size: 1.3em;
+            line-height: 1.6;
+        }
+
+        .overview-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 40px;
+        }
+
+        .overview-box h2 {
+            margin-bottom: 15px;
+            font-size: 1.8em;
+        }
+
+        .overview-box p {
+            font-size: 1.1em;
+            line-height: 1.6;
+            opacity: 0.95;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 40px 0;
+        }
+
+        .stat-card {
+            background: #f7fafc;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            border: 2px solid #e2e8f0;
+            transition: all 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.2);
+            border-color: #667eea;
+        }
+
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            color: #4a5568;
+            font-size: 1em;
+        }
+
+        .viewer-card {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+
+        .viewer-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border-color: #667eea;
+        }
+
+        .viewer-card h3 {
+            color: #2d3748;
+            margin-bottom: 15px;
+            font-size: 1.8em;
+        }
+
+        .viewer-card p {
+            color: #718096;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .viewer-button {
+            display: inline-block;
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .viewer-button:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .info-section {
+            background: #edf2f7;
+            padding: 30px;
+            border-radius: 15px;
+            margin-top: 40px;
+            border-left: 5px solid #667eea;
+        }
+
+        .info-section h3 {
+            color: #2d3748;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .info-section ul {
+            list-style-position: inside;
+            color: #4a5568;
+            line-height: 2;
+        }
+
+        .patient-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .patient-badge {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: bold;
+            color: #667eea;
+            border: 2px solid #e2e8f0;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 2px solid #e2e8f0;
+            color: #718096;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>DIPG RNA-seq Analysis Portal</h1>
+        <p class="subtitle">
+            Comprehensive transcriptomic analysis of Diffuse Intrinsic Pontine Glioma (DIPG) patient samples<br>
+            compared to Normal Neural Progenitor Cells (NPC)
+        </p>
+
+        <div class="overview-box">
+            <h2>Study Overview</h2>
+            <p>
+                This portal provides interactive access to RNA-seq data from 6 DIPG patient samples
+                compared to normal neural progenitor cells. Each patient sample includes biological
+                replicates (2-3 per patient), enabling robust statistical analysis of differential
+                gene expression in this aggressive pediatric brain tumor.
+            </p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number">14,981</div>
+                <div class="stat-label">Genes Analyzed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">6</div>
+                <div class="stat-label">DIPG Patients</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">20</div>
+                <div class="stat-label">Total Samples</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">~6,000</div>
+                <div class="stat-label">Significant DEGs<br>per Patient</div>
+            </div>
+        </div>
+
+        <h2 style="color: #2d3748; margin: 40px 0 20px 0; font-size: 2em;">Interactive Viewer</h2>
+
+        <div class="viewer-card">
+            <h3>🧬 Gene Expression Viewer</h3>
+            <p>
+                Search and visualize expression levels for any gene across all DIPG patient samples
+                and normal controls. Includes statistical comparisons, fold change calculations,
+                and p-values from Welch's t-tests.
+            </p>
+            <a href="gene_viewer.html" class="viewer-button">Launch Gene Viewer →</a>
+        </div>
+
+        <div class="info-section">
+            <h3>DIPG Patient Samples</h3>
+            <div class="patient-list">
+                <div class="patient-badge">DIPG4</div>
+                <div class="patient-badge">DIPG25</div>
+                <div class="patient-badge">SF7761</div>
+                <div class="patient-badge">DIPG13</div>
+                <div class="patient-badge">DIPG17</div>
+                <div class="patient-badge">JHHDIPG1</div>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <h3>Analysis Details</h3>
+            <ul>
+                <li><strong>Normal Control:</strong> Neural Progenitor Cells (NPC) - 3 biological replicates</li>
+                <li><strong>DIPG Samples:</strong> 6 patient samples with 2-3 replicates each</li>
+                <li><strong>Filtering:</strong> Genes with mean NPC expression ≥5.0 and minimum expression ≥1.0 in all NPC replicates</li>
+                <li><strong>Statistics:</strong> Fold change and Welch's t-test comparing each patient to NPC</li>
+                <li><strong>Significant Changes:</strong> 1,400-2,400 genes >2-fold or <0.5-fold (p<0.05) per patient</li>
+                <li><strong>Data Type:</strong> TPM-normalized RNA-seq expression values</li>
+            </ul>
+        </div>
+
+        <div class="info-section">
+            <h3>Key Findings</h3>
+            <ul>
+                <li><strong>DIPG4:</strong> 2,059 upregulated, 2,410 downregulated (mean FC: 4.09x)</li>
+                <li><strong>DIPG25:</strong> 1,786 upregulated, 1,893 downregulated (mean FC: 2.17x)</li>
+                <li><strong>SF7761:</strong> 1,695 upregulated, 1,401 downregulated (mean FC: 2.28x)</li>
+                <li><strong>DIPG13:</strong> 1,959 upregulated, 1,962 downregulated (mean FC: 2.97x)</li>
+                <li><strong>DIPG17:</strong> 1,752 upregulated, 2,008 downregulated (mean FC: 3.54x)</li>
+                <li><strong>JHHDIPG1:</strong> 1,424 upregulated, 1,668 downregulated (mean FC: 2.30x)</li>
+            </ul>
+        </div>
+
+        <footer>
+            <p><strong>DIPG RNA-seq Analysis Portal</strong></p>
+            <p>Data processed and visualized using R and Chart.js</p>
+            <p style="margin-top: 10px; font-size: 0.9em;">
+                Interactive tools for exploring gene expression in diffuse intrinsic pontine glioma
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

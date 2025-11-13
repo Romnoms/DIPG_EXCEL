@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DIPG Gene Expression Viewer</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            color: #2d3748;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            text-align: center;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #718096;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .search-container {
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        #geneSearch {
+            width: 100%;
+            padding: 15px 20px;
+            font-size: 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            transition: all 0.3s;
+        }
+
+        #geneSearch:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        #suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-top: none;
+            border-radius: 0 0 10px 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            display: none;
+            z-index: 1000;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .suggestion-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            border-bottom: 1px solid #f7fafc;
+        }
+
+        .suggestion-item:hover {
+            background-color: #f7fafc;
+        }
+
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 500px;
+            margin: 30px 0;
+            background: #f7fafc;
+            border-radius: 15px;
+            padding: 20px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            border-radius: 15px;
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 1.8em;
+            font-weight: bold;
+        }
+
+        .info-box {
+            background: #edf2f7;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            border-left: 4px solid #667eea;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #718096;
+            font-size: 1.2em;
+        }
+
+        .legend-custom {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+
+        .back-button {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+
+        .back-button:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-button">← All Data</a>
+
+        <h1>DIPG Gene Expression Viewer</h1>
+        <p class="subtitle">Interactive comparison of DIPG patient samples vs Normal Neural Progenitor Cells (NPC)</p>
+
+        <div class="search-container">
+            <input
+                type="text"
+                id="geneSearch"
+                placeholder="Search for a gene (e.g., TP53, EGFR, MYC)..."
+                autocomplete="off"
+            >
+            <div id="suggestions"></div>
+        </div>
+
+        <div id="content">
+            <div class="loading">Loading gene data...</div>
+        </div>
+    </div>
+
+    <script>
+        let geneData = {};
+        let allGenes = [];
+
+        // Load data
+        fetch('dipg_gene_data.json')
+            .then(response => response.json())
+            .then(data => {
+                geneData = data;
+
+                // Extract all unique genes
+                const geneSet = new Set();
+                Object.values(data).forEach(patientData => {
+                    patientData.forEach(gene => geneSet.add(gene.gene));
+                });
+                allGenes = Array.from(geneSet).sort();
+
+                document.getElementById('content').innerHTML = '<div class="info-box"><strong>Ready!</strong> Search for a gene above to view expression data across DIPG patient samples.</div>';
+            })
+            .catch(error => {
+                document.getElementById('content').innerHTML = '<div class="loading">Error loading data. Please try again.</div>';
+                console.error('Error loading data:', error);
+            });
+
+        // Search functionality
+        const searchInput = document.getElementById('geneSearch');
+        const suggestionsDiv = document.getElementById('suggestions');
+
+        searchInput.addEventListener('input', function() {
+            const query = this.value.trim().toUpperCase();
+
+            if (query.length < 1) {
+                suggestionsDiv.style.display = 'none';
+                return;
+            }
+
+            const matches = allGenes.filter(gene =>
+                gene.toUpperCase().includes(query)
+            ).slice(0, 50);
+
+            if (matches.length > 0) {
+                suggestionsDiv.innerHTML = matches.map(gene =>
+                    `<div class="suggestion-item" onclick="selectGene('${gene}')">${gene}</div>`
+                ).join('');
+                suggestionsDiv.style.display = 'block';
+            } else {
+                suggestionsDiv.style.display = 'none';
+            }
+        });
+
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const gene = this.value.trim().toUpperCase();
+                selectGene(gene);
+            }
+        });
+
+        // Click outside to close suggestions
+        document.addEventListener('click', function(e) {
+            if (!searchInput.contains(e.target) && !suggestionsDiv.contains(e.target)) {
+                suggestionsDiv.style.display = 'none';
+            }
+        });
+
+        function selectGene(geneName) {
+            suggestionsDiv.style.display = 'none';
+            searchInput.value = geneName;
+            displayGeneData(geneName);
+        }
+
+        let currentChart = null;
+
+        function displayGeneData(geneName) {
+            geneName = geneName.toUpperCase();
+
+            // Find gene data across all patients
+            const patients = ['DIPG4', 'DIPG25', 'SF7761', 'DIPG13', 'DIPG17', 'JHHDIPG1'];
+            const patientData = {};
+
+            patients.forEach(patient => {
+                const geneEntry = geneData[patient].find(g => g.gene.toUpperCase() === geneName);
+                if (geneEntry) {
+                    patientData[patient] = geneEntry;
+                }
+            });
+
+            if (Object.keys(patientData).length === 0) {
+                document.getElementById('content').innerHTML = `
+                    <div class="info-box">
+                        <strong>Gene not found:</strong> "${geneName}" was not found in the dataset or did not pass filtering criteria.
+                    </div>
+                `;
+                return;
+            }
+
+            // Get NPC (control) value from first available patient data
+            const firstPatient = Object.values(patientData)[0];
+            const npcMean = firstPatient.npc_mean;
+            const npcSem = firstPatient.npc_sem;
+
+            // Prepare chart data
+            const labels = ['NPC (Normal)', ...patients.filter(p => patientData[p])];
+            const means = [npcMean, ...patients.filter(p => patientData[p]).map(p => patientData[p].patient_mean)];
+            const sems = [npcSem, ...patients.filter(p => patientData[p]).map(p => patientData[p].patient_sem)];
+            const colors = [
+                'rgba(99, 179, 237, 0.8)',  // NPC - blue
+                'rgba(255, 99, 132, 0.8)',  // DIPG4 - red
+                'rgba(255, 159, 64, 0.8)',  // DIPG25 - orange
+                'rgba(255, 205, 86, 0.8)',  // SF7761 - yellow
+                'rgba(75, 192, 192, 0.8)',  // DIPG13 - teal
+                'rgba(153, 102, 255, 0.8)', // DIPG17 - purple
+                'rgba(201, 203, 207, 0.8)'  // JHHDIPG1 - grey
+            ];
+
+            // Create chart
+            const chartHtml = `
+                <div class="chart-container">
+                    <canvas id="geneChart"></canvas>
+                </div>
+
+                <div class="stats-grid">
+                    ${patients.filter(p => patientData[p]).map(patient => {
+                        const data = patientData[patient];
+                        const fc = data.fold_change;
+                        const pVal = parseFloat(data.p_value);
+                        return `
+                            <div class="stat-card">
+                                <div class="stat-label">${patient}</div>
+                                <div class="stat-value">${fc.toFixed(2)}x</div>
+                                <div class="stat-label">Fold Change</div>
+                                <div class="stat-label" style="margin-top: 10px;">p-value: ${pVal.toExponential(2)}</div>
+                                <div class="stat-label">${fc > 2 ? '↑ Upregulated' : fc < 0.5 ? '↓ Downregulated' : '→ Similar'}</div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+
+                <div class="info-box">
+                    <strong>About this data:</strong><br>
+                    • Expression values are shown as mean ± SEM<br>
+                    • Fold change represents patient expression / NPC expression<br>
+                    • P-values from Welch's t-test comparing patient to NPC replicates<br>
+                    • ${Object.keys(patientData).length} of 6 patients analyzed for ${geneName}
+                </div>
+            `;
+
+            document.getElementById('content').innerHTML = chartHtml;
+
+            // Destroy previous chart if exists
+            if (currentChart) {
+                currentChart.destroy();
+            }
+
+            // Create new chart
+            const ctx = document.getElementById('geneChart').getContext('2d');
+            currentChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Expression Level',
+                        data: means,
+                        backgroundColor: colors.slice(0, labels.length),
+                        borderColor: colors.slice(0, labels.length).map(c => c.replace('0.8', '1')),
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: `${geneName} Expression`,
+                            font: { size: 24, weight: 'bold' }
+                        },
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const index = context.dataIndex;
+                                    const mean = means[index].toFixed(2);
+                                    const sem = sems[index].toFixed(2);
+                                    return `Expression: ${mean} ± ${sem}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Expression Level (TPM)',
+                                font: { size: 14, weight: 'bold' }
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Sample',
+                                font: { size: 14, weight: 'bold' }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Add error bars
+            const yScale = currentChart.scales.y;
+            const xScale = currentChart.scales.x;
+
+            means.forEach((mean, index) => {
+                const sem = sems[index];
+                const x = xScale.getPixelForValue(index);
+                const yTop = yScale.getPixelForValue(mean + sem);
+                const yBottom = yScale.getPixelForValue(mean - sem);
+                const yMid = yScale.getPixelForValue(mean);
+
+                const ctxChart = currentChart.ctx;
+                ctxChart.strokeStyle = 'black';
+                ctxChart.lineWidth = 2;
+
+                // Vertical line
+                ctxChart.beginPath();
+                ctxChart.moveTo(x, yTop);
+                ctxChart.lineTo(x, yBottom);
+                ctxChart.stroke();
+
+                // Top cap
+                ctxChart.beginPath();
+                ctxChart.moveTo(x - 5, yTop);
+                ctxChart.lineTo(x + 5, yTop);
+                ctxChart.stroke();
+
+                // Bottom cap
+                ctxChart.beginPath();
+                ctxChart.moveTo(x - 5, yBottom);
+                ctxChart.lineTo(x + 5, yBottom);
+                ctxChart.stroke();
+            });
+        }
+    </script>
+</body>
+</html>
