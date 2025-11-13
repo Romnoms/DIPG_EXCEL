@@ -120,22 +120,25 @@
         }
 
         .stat-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: white;
             padding: 20px;
             border-radius: 15px;
-            color: white;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            color: #2d3748;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border: 2px solid #e2e8f0;
+            border-left: 4px solid #667eea;
         }
 
         .stat-label {
             font-size: 0.9em;
-            opacity: 0.9;
+            color: #4a5568;
             margin-bottom: 5px;
         }
 
         .stat-value {
             font-size: 1.8em;
             font-weight: bold;
+            color: #2d3748;
         }
 
         .info-box {
@@ -341,14 +344,15 @@
                         const fc = data.fc;
                         const pVal = data.pvalue;
                         const status = fc > 2 ? '↑ Upregulated' : fc < 0.5 ? '↓ Downregulated' : '→ Similar';
-                        const sigColor = pVal < 0.05 ? '#e53e3e' : '#718096';
+                        const sigColor = pVal < 0.05 ? '#c53030' : '#2d3748';
+                        const pDisplay = pVal < 0.001 ? 'p < 0.001' : `p = ${pVal.toFixed(4)}`;
                         return `
                             <div class="stat-card">
-                                <div class="stat-label">${patient}</div>
+                                <div class="stat-label" style="font-weight: 600; font-size: 1em;">${patient}</div>
                                 <div class="stat-value">${fc.toFixed(2)}x</div>
                                 <div class="stat-label">Fold Change</div>
-                                <div class="stat-label" style="margin-top: 10px; color: ${sigColor};">p = ${pVal.toExponential(2)}</div>
-                                <div class="stat-label" style="font-weight: bold;">${status}</div>
+                                <div style="margin-top: 10px; font-size: 1em; font-weight: bold; color: ${sigColor};">${pDisplay}</div>
+                                <div class="stat-label" style="font-weight: 600; margin-top: 5px; color: ${sigColor};">${status}</div>
                             </div>
                         `;
                     }).join('')}
